@@ -17,25 +17,27 @@ Original file is located at
 """
 
 import numpy as np
-
 np.random.seed(42)
 
-class Perceptron:
-    def __init__(self, input_size, lr=0.01, epochs=1000):
+class Perceptron: # ERROR DEVE SER PASSADO EM PORCENTAGEM, TIPO 0.1 | 1 | 50 etc.
+    def __init__(self, input_size, lr=0.01, epochs=1000, d_error=0.1, weights = np.random.randn(2)):
         self.lr = lr # learning rate
         self.epochs = epochs # quantidade de "rodadas" de treino
-        self.weights = np.random.randn(input_size) # peso inicial aleatorio
+        self.d_error = d_error / 100.0  # erro desejado por rodada para early stopping, divide por 100 para poder passar input como porcentagem
+        self.weights = weights # peso, por padrao vai ser aleatorio mas da pra mudar
         self.bias = np.random.randn() # bias aleatorio
+        self.n_epochs = 0 # contador de rodadas
 
     def activation(self, x):
-        return np.where(x >= 0, 1, 0) # se x for maior que 0, retorna 1. senao retorna 0
+        return np.where(x >= 0, 1, -1) # se x for maior ou igual a 0, retorna +1. senao retorna -1
 
     def predict(self, X):
         linear_output = np.dot(X, self.weights) + self.bias # weighted sum das entradas + bias
         return self.activation(linear_output)
 
     def fit(self, X, y):
-        for _ in range(self.epochs): # rodadas
+        for epoch in range(self.epochs): # rodadas
+            epoch_error = 0.0 # acumula erro  (d - o)^2 / 2
             for xi, target in zip(X, y):
                 linear_output = np.dot(xi, self.weights) + self.bias
                 y_pred = self.activation(linear_output)
@@ -43,6 +45,139 @@ class Perceptron:
                 update = self.lr * (target - y_pred) # erro vezes learning rate
                 self.weights += update * xi # ajuste dos pesos
                 self.bias += update # ajuste do bias
+                epoch_error += ((target - y_pred) ** 2) / 2.0 # erro quadratico/2
+
+            if epoch_error < self.d_error: # early stopping
+                self.n_epochs = epoch + 1 # contador de rodadas
+                break
+        else:
+            self.n_epochs = self.epochs
+
+# calculadora de accuracy, compara a truth table com a predicao
+def accuracy(y_true, y_pred):
+    correct = np.sum(y_true == y_pred)
+    total = len(y_true)
+    return (correct / total) * 100
+
+# calculador de error rate
+def error_rate(y_true, y_pred):
+    return 100 - accuracy(y_true, y_pred)
+
+
+# AND GATE
+X_and = np.array([[0,0], [0,1], [1,0], [1,1]])
+y_and = np.array([-1, -1, -1, 1])
+
+# OR GATE
+X_or = np.array([[0,0], [0,1], [1,0], [1,1]])
+y_or = np.array([-1, 1, 1, 1])
+
+# XOR GATE
+X_xor = np.array([[0,0], [0,1], [1,0], [1,1]])
+y_xor = np.array([-1, 1, 1, -1])
+
+# treino
+model = Perceptron(input_size=2, lr=0.1, epochs=1000, d_error=1e-3)
+
+# fit AND
+model.fit(X_and, y_and)
+y_and_predict = model.predict(X_and)
+print("-----------------------------------------")
+print("- AND GATE")
+print(f"- Acurracy: {accuracy(y_and, y_and_predict):.2f}%")
+print(f"- Error rate: {error_rate(y_and, y_and_predict):.2f}%")
+print(f"- Rodadas necessárias: {model.n_epochs}")
+print("- Predictions:", y_and_predict)
+print("- Weights:", model.weights)
+print("- Bias:", model.bias)
+print("-----------------------------------------")
+
+# fit OR
+model.fit(X_or, y_or)
+y_or_predict = model.predict(X_or)
+print("-----------------------------------------")
+print("- OR GATE")
+print(f"- Acurracy: {accuracy(y_or, y_or_predict):.2f}%")
+print(f"- Error rate: {error_rate(y_or, y_or_predict):.2f}%")
+print(f"- Rodadas necessárias: {model.n_epochs}")
+print("- Predictions:", y_or_predict)
+print("- Weights:", model.weights)
+print("- Bias:", model.bias)
+print("-----------------------------------------")
+
+# fit XOR
+model.fit(X_xor, y_xor)
+y_xor_predict = model.predict(X_xor)
+print("-----------------------------------------")
+print("- XOR GATE")
+print(f"- Acurracy: {accuracy(y_xor, y_xor_predict):.2f}%")
+print(f"- Error rate: {error_rate(y_xor, y_xor_predict):.2f}%")
+print(f"- Rodadas necessárias: {model.n_epochs}")
+print("- Predictions:", y_xor_predict)
+print("- Weights:", model.weights)
+print("- Bias:", model.bias)
+print("-----------------------------------------")
+
+"""# 2. Repita o exercício 1 sobre o problema das portas lógicas utilizando a Regra de Aprendizado Delta"""
+
+import numpy as np
+np.random.seed(42)
+
+class Perceptron: # ERROR DEVE SER PASSADO EM PORCENTAGEM, TIPO 0.1 | 1 | 50 etc.
+    def __init__(self, input_size, lr=0.01, epochs=1000, d_error=0.1, weights = np.random.randn(2)):
+        self.lr = lr # learning rate
+        self.epochs = epochs # quantidade de "rodadas" de treino
+        self.d_error = d_error / 100.0  # erro desejado por rodada para early stopping, divide por 100 para poder passar input como porcentagem
+        self.weights = weights # peso, por padrao vai ser aleatorio mas da pra mudar
+        self.bias = np.random.randn() # bias aleatorio
+        self.n_epochs = 0 # contador de rodadas
+
+    def activation(self, x):
+        return np.where(x >= 0, 1, -1) # se x for maior ou igual a 0, retorna +1. senao retorna -1
+
+    def predict(self, X):
+        linear_output = np.dot(X, self.weights) + self.bias # weighted sum das entradas + bias
+        return self.activation(linear_output)
+
+    def fit(self, X, y):
+        for epoch in range(self.epochs): # rodadas
+            epoch_error = 0.0 # acumula erro  (d - o)^2 / 2
+            for xi, target in zip(X, y):
+                linear_output = np.dot(xi, self.weights) + self.bias
+                y_pred = self.activation(linear_output)
+                # ----
+                update = self.lr * (target - y_pred) # erro vezes learning rate
+                self.weights += update * xi # ajuste dos pesos
+                self.bias += update # ajuste do bias
+                epoch_error += ((target - y_pred) ** 2) / 2.0 # erro quadratico/2
+
+            if epoch_error < self.d_error: # early stopping
+                self.n_epochs = epoch + 1 # contador de rodadas
+                break
+        else:
+            self.n_epochs = self.epochs
+
+    # TREINO COM REGRA DELTA
+    def fit_delta(self, X, y):
+        for epoch in range(self.epochs): # rodadas
+            epoch_error = 0.0 # acumula erro (d - o)^2 / 2
+            for xi, target in zip(X, y):
+                linear_output = np.dot(xi, self.weights) + self.bias # weighted sum das entradas + bias
+                y_pred = linear_output # saida linear (identidade)
+
+                # ----
+                error = (target - y_pred) # erro (d - o)
+                update = self.lr * error # gradiente com ativacao identidade (derivada = 1)
+                self.weights += update * xi # ajuste dos pesos (LMS)
+                self.bias += update # ajuste do bias
+
+                epoch_error += (error ** 2) / 2.0 # erro quadratico/2
+
+            if epoch_error < self.d_error: # early stopping
+                self.n_epochs = epoch + 1 # contador de rodadas
+                break
+        else:
+            self.n_epochs = self.epochs
 
 
 
@@ -52,155 +187,648 @@ def accuracy(y_true, y_pred):
     total = len(y_true)
     return (correct / total) * 100
 
+# calculador de error rate
+def error_rate(y_true, y_pred):
+    return 100 - accuracy(y_true, y_pred)
+
 
 # AND GATE
 X_and = np.array([[0,0], [0,1], [1,0], [1,1]])
-y_and = np.array([0, 0, 0, 1])
+y_and = np.array([-1, -1, -1, 1])
 
 # OR GATE
 X_or = np.array([[0,0], [0,1], [1,0], [1,1]])
-y_or = np.array([0, 1, 1, 1])
+y_or = np.array([-1, 1, 1, 1])
 
 # XOR GATE
 X_xor = np.array([[0,0], [0,1], [1,0], [1,1]])
-y_xor = np.array([0, 1, 1, 0])
+y_xor = np.array([-1, 1, 1, -1])
 
 # treino
-model = Perceptron(input_size=2, lr=0.1, epochs=10)
+model = Perceptron(input_size=2, lr=0.1, epochs=1000, d_error=1e-3)
 
 # fit AND
-model.fit(X_and, y_and)
-
+model.fit_delta(X_and, y_and)
 y_and_predict = model.predict(X_and)
 print("-----------------------------------------")
-print("- AND GATE")
+print("- AND GATE - Regra Delta")
 print(f"- Acurracy: {accuracy(y_and, y_and_predict):.2f}%")
+print(f"- Error rate: {error_rate(y_and, y_and_predict):.2f}%")
+print(f"- Rodadas necessárias: {model.n_epochs}")
 print("- Predictions:", y_and_predict)
 print("- Weights:", model.weights)
 print("- Bias:", model.bias)
 print("-----------------------------------------")
 
 # fit OR
-model.fit(X_or, y_or)
-
+model.fit_delta(X_or, y_or)
 y_or_predict = model.predict(X_or)
 print("-----------------------------------------")
-print("- OR GATE")
+print("- OR GATE - Regra Delta")
 print(f"- Acurracy: {accuracy(y_or, y_or_predict):.2f}%")
+print(f"- Error rate: {error_rate(y_or, y_or_predict):.2f}%")
+print(f"- Rodadas necessárias: {model.n_epochs}")
 print("- Predictions:", y_or_predict)
 print("- Weights:", model.weights)
 print("- Bias:", model.bias)
 print("-----------------------------------------")
 
 # fit XOR
-model.fit(X_xor, y_xor)
-
+model.fit_delta(X_xor, y_xor)
 y_xor_predict = model.predict(X_xor)
 print("-----------------------------------------")
-print("- XOR GATE")
+print("- XOR GATE - Regra Delta")
 print(f"- Acurracy: {accuracy(y_xor, y_xor_predict):.2f}%")
+print(f"- Error rate: {error_rate(y_xor, y_xor_predict):.2f}%")
+print(f"- Rodadas necessárias: {model.n_epochs}")
 print("- Predictions:", y_xor_predict)
 print("- Weights:", model.weights)
 print("- Bias:", model.bias)
 print("-----------------------------------------")
 
-"""# 2. Repita o exercício 1 sobre o problema das portas lógicas utilizando a Regra de Aprendizado Delta"""
+"""# 3 Interagir com o código (Utilizando AND gate)
+
+## Alterar a Taxa de Aprendizado (Learning Rate)
+Mude o valor de ‘c’ para ver como isso afeta a velocidade de convergência do
+algoritmo. Valores comuns são 0.1, 0.01, ou 0.001. Experimente com uma taxa de aprendizado muito alta e muito baixa e observe as
+diferenças no comportamento do treinamento.
+"""
 
 import numpy as np
-
-import numpy as np
-
 np.random.seed(42)
 
-class Perceptron:
-    def __init__(self, input_size, lr=0.01, epochs=1000):
-        self.lr = lr  # learning rate
-        self.epochs = epochs  # épocas de treino
-        self.weights = np.random.randn(input_size)  # pesos iniciais
-        self.bias = np.random.randn()  # bias inicial
+class Perceptron: # ERROR DEVE SER PASSADO EM PORCENTAGEM, TIPO 0.1 | 1 | 50 etc.
+    def __init__(self, input_size, lr=0.01, epochs=1000, d_error=0.1, weights = np.random.randn(2)):
+        self.lr = lr # learning rate
+        self.epochs = epochs # quantidade de "rodadas" de treino
+        self.d_error = d_error / 100.0  # erro desejado por rodada para early stopping, divide por 100 para poder passar input como porcentagem
+        self.weights = weights # peso, por padrao vai ser aleatorio mas da pra mudar
+        self.bias = np.random.randn() # bias aleatorio
+        self.n_epochs = 0 # contador de rodadas
 
-    # Função de ativação binária (para inferência)
     def activation(self, x):
-        return np.where(x >= 0, 1, 0)
+        return np.where(x >= 0, 1, -1) # se x for maior ou igual a 0, retorna +1. senao retorna -1
 
-    # Predição binária (usa degrau)
     def predict(self, X):
-        linear_output = np.dot(X, self.weights) + self.bias
+        linear_output = np.dot(X, self.weights) + self.bias # weighted sum das entradas + bias
         return self.activation(linear_output)
 
-    # Regra Perceptron
-    def fit_perceptron(self, X, y):
-        for _ in range(self.epochs):
+    def fit(self, X, y):
+        for epoch in range(self.epochs): # rodadas
+            epoch_error = 0.0 # acumula erro  (d - o)^2 / 2
             for xi, target in zip(X, y):
                 linear_output = np.dot(xi, self.weights) + self.bias
-                y_pred_bin = self.activation(linear_output)
-                update = self.lr * (target - y_pred_bin)
-                self.weights += update * xi
-                self.bias += update
+                y_pred = self.activation(linear_output)
+                # ----
+                update = self.lr * (target - y_pred) # erro vezes learning rate
+                self.weights += update * xi # ajuste dos pesos
+                self.bias += update # ajuste do bias
+                epoch_error += ((target - y_pred) ** 2) / 2.0 # erro quadratico/2
 
-    # Regra Delta Widrow–Hoff
-    # atualiza os pesos usando saida linear
-    # w <- w + lr * (target - y_hat) * x
-    # b <- b + lr * (target - y_hat)
-    def fit_delta(self, X, y):
-        for _ in range(self.epochs):
-            for xi, target in zip(X, y):
-                y_hat = np.dot(xi, self.weights) + self.bias  # saída linear
-                error = target - y_hat # erro contínuo
-                self.weights += self.lr * error * xi # atualização Delta
-                self.bias += self.lr * error
+            if epoch_error < self.d_error: # early stopping
+                self.n_epochs = epoch + 1 # contador de rodadas
+                break
+        else:
+            self.n_epochs = self.epochs
 
-# calculadora de accuracy, compara a truth table com a predição
+
+# calculadora de accuracy, compara a truth table com a predicao
 def accuracy(y_true, y_pred):
     correct = np.sum(y_true == y_pred)
     total = len(y_true)
     return (correct / total) * 100
 
-# Tabelas verdade
+# calculador de error rate
+def error_rate(y_true, y_pred):
+    return 100 - accuracy(y_true, y_pred)
+
+
+# AND GATE
 X_and = np.array([[0,0], [0,1], [1,0], [1,1]])
-y_and = np.array([0, 0, 0, 1])
+y_and = np.array([-1, -1, -1, 1])
 
-X_or = np.array([[0,0], [0,1], [1,0], [1,1]])
-y_or = np.array([0, 1, 1, 1])
 
-X_xor = np.array([[0,0], [0,1], [1,0], [1,1]])
-y_xor = np.array([0, 1, 1, 0])
+##################
 
-# Treino com Regra Delta
-model = Perceptron(input_size=2, lr=0.1, epochs=50)
+# treino
+model = Perceptron(input_size=2, lr=0.1, epochs=10000, d_error=1e-3)
 
-# AND com Delta
-model.fit_delta(X_and, y_and)
+# fit AND
+model.fit(X_and, y_and)
 
 y_and_predict = model.predict(X_and)
 print("-----------------------------------------")
-print("- AND GATE (Delta)")
-print(f"- Accuracy: {accuracy(y_and, y_and_predict):.2f}%")
+print("- AND GATE - Learning Rate 0.1")
+print(f"- Acurracy: {accuracy(y_and, y_and_predict):.2f}%")
+print(f"- Error rate: {error_rate(y_and, y_and_predict):.2f}%")
+print(f"- Rodadas necessárias: {model.n_epochs}")
 print("- Predictions:", y_and_predict)
 print("- Weights:", model.weights)
 print("- Bias:", model.bias)
 print("-----------------------------------------")
 
-# OR com Delta
-model.fit_delta(X_or, y_or)
+#### learning rate 0.01
 
+# treino
+model = Perceptron(input_size=2, lr=0.01, epochs=10000, d_error=1e-3)
+
+# fit AND
+model.fit(X_and, y_and)
+
+y_and_predict = model.predict(X_and)
+print("-----------------------------------------")
+print("- AND GATE - Learning Rate 0.01")
+print(f"- Acurracy: {accuracy(y_and, y_and_predict):.2f}%")
+print(f"- Error rate: {error_rate(y_and, y_and_predict):.2f}%")
+print(f"- Rodadas necessárias: {model.n_epochs}")
+print("- Predictions:", y_and_predict)
+print("- Weights:", model.weights)
+print("- Bias:", model.bias)
+print("-----------------------------------------")
+
+#### learning rate 0.001
+
+# treino
+model = Perceptron(input_size=2, lr=0.001, epochs=10000, d_error=1e-3)
+
+# fit AND
+model.fit(X_and, y_and)
+
+y_and_predict = model.predict(X_and)
+print("-----------------------------------------")
+print("- AND GATE - Learning Rate 0.001")
+print(f"- Acurracy: {accuracy(y_and, y_and_predict):.2f}%")
+print(f"- Error rate: {error_rate(y_and, y_and_predict):.2f}%")
+print(f"- Rodadas necessárias: {model.n_epochs}")
+print("- Predictions:", y_and_predict)
+print("- Weights:", model.weights)
+print("- Bias:", model.bias)
+print("-----------------------------------------")
+
+#### learning rate 0.0000000001
+
+# treino
+model = Perceptron(input_size=2, lr=0.0000000001, epochs=50000, d_error=1e-3)
+
+# fit AND
+model.fit(X_and, y_and)
+
+y_and_predict = model.predict(X_and)
+print("-----------------------------------------")
+print("- AND GATE - Learning Rate 0.0000000001")
+print(f"- Acurracy: {accuracy(y_and, y_and_predict):.2f}%")
+print(f"- Error rate: {error_rate(y_and, y_and_predict):.2f}%")
+print(f"- Rodadas necessárias: {model.n_epochs}")
+print("- Predictions:", y_and_predict)
+print("- Weights:", model.weights)
+print("- Bias:", model.bias)
+print("-----------------------------------------")
+
+"""## Inicialização de Pesos
+Experimente diferentes métodos de inicialização de pesos, como definir todos para zero, inicializar com
+valores pequenos próximos de zero, ou usar uma distribuição diferente.
+
+"""
+
+import numpy as np
+np.random.seed(42)
+
+class Perceptron: # ERROR DEVE SER PASSADO EM PORCENTAGEM, TIPO 0.1 | 1 | 50 etc.
+    def __init__(self, input_size, lr=0.01, epochs=1000, d_error=0.1, weights = np.random.randn(2)):
+        self.lr = lr # learning rate
+        self.epochs = epochs # quantidade de "rodadas" de treino
+        self.d_error = d_error / 100.0  # erro desejado por rodada para early stopping, divide por 100 para poder passar input como porcentagem
+        self.weights = weights # peso, por padrao vai ser aleatorio mas da pra mudar
+        self.bias = np.random.randn() # bias aleatorio
+        self.n_epochs = 0 # contador de rodadas
+
+    def activation(self, x):
+        return np.where(x >= 0, 1, -1) # se x for maior ou igual a 0, retorna +1. senao retorna -1
+
+    def predict(self, X):
+        linear_output = np.dot(X, self.weights) + self.bias # weighted sum das entradas + bias
+        return self.activation(linear_output)
+
+    def fit(self, X, y):
+        for epoch in range(self.epochs): # rodadas
+            epoch_error = 0.0 # acumula erro  (d - o)^2 / 2
+            for xi, target in zip(X, y):
+                linear_output = np.dot(xi, self.weights) + self.bias
+                y_pred = self.activation(linear_output)
+                # ----
+                update = self.lr * (target - y_pred) # erro vezes learning rate
+                self.weights += update * xi # ajuste dos pesos
+                self.bias += update # ajuste do bias
+                epoch_error += ((target - y_pred) ** 2) / 2.0 # erro quadratico/2
+
+            if epoch_error < self.d_error: # early stopping
+                self.n_epochs = epoch + 1 # contador de rodadas
+                break
+        else:
+            self.n_epochs = self.epochs
+
+
+# calculadora de accuracy, compara a truth table com a predicao
+def accuracy(y_true, y_pred):
+    correct = np.sum(y_true == y_pred)
+    total = len(y_true)
+    return (correct / total) * 100
+
+# calculador de error rate
+def error_rate(y_true, y_pred):
+    return 100 - accuracy(y_true, y_pred)
+
+
+# AND GATE
+X_and = np.array([[0,0], [0,1], [1,0], [1,1]])
+y_and = np.array([-1, -1, -1, 1])
+
+
+##### PESOS ALEATORIOS
+
+# treino
+model = Perceptron(input_size=2, lr=0.1, epochs=10000, d_error=1e-3, weights=np.random.randn(2))
+
+# fit AND
+model.fit(X_and, y_and)
+
+y_and_predict = model.predict(X_and)
+print("-----------------------------------------")
+print("- AND GATE - Pesos Aleatorios")
+print(f"- Acurracy: {accuracy(y_and, y_and_predict):.2f}%")
+print(f"- Error rate: {error_rate(y_and, y_and_predict):.2f}%")
+print(f"- Rodadas necessárias: {model.n_epochs}")
+print("- Predictions:", y_and_predict)
+print("- Weights:", model.weights)
+print("- Bias:", model.bias)
+print("-----------------------------------------")
+
+##### PESOS ZERADOS
+
+# treino
+model = Perceptron(input_size=2, lr=0.1, epochs=10000, d_error=1e-3, weights=[0, 0])
+
+# fit AND
+model.fit(X_and, y_and)
+
+y_and_predict = model.predict(X_and)
+print("-----------------------------------------")
+print("- AND GATE - Pesos Zerados")
+print(f"- Acurracy: {accuracy(y_and, y_and_predict):.2f}%")
+print(f"- Error rate: {error_rate(y_and, y_and_predict):.2f}%")
+print(f"- Rodadas necessárias: {model.n_epochs}")
+print("- Predictions:", y_and_predict)
+print("- Weights:", model.weights)
+print("- Bias:", model.bias)
+print("-----------------------------------------")
+
+
+##### PESOS 1
+
+# treino
+model = Perceptron(input_size=2, lr=0.1, epochs=10000, d_error=1e-3, weights=[1, 1])
+
+# fit AND
+model.fit(X_and, y_and)
+
+y_and_predict = model.predict(X_and)
+print("-----------------------------------------")
+print("- AND GATE - Pesos 1")
+print(f"- Acurracy: {accuracy(y_and, y_and_predict):.2f}%")
+print(f"- Error rate: {error_rate(y_and, y_and_predict):.2f}%")
+print(f"- Rodadas necessárias: {model.n_epochs}")
+print("- Predictions:", y_and_predict)
+print("- Weights:", model.weights)
+print("- Bias:", model.bias)
+print("-----------------------------------------")
+
+##### PESOS 2
+
+# treino
+model = Perceptron(input_size=2, lr=0.1, epochs=10000, d_error=1e-3, weights=[2, 2])
+
+# fit AND
+model.fit(X_and, y_and)
+
+y_and_predict = model.predict(X_and)
+print("-----------------------------------------")
+print("- AND GATE - Pesos 2")
+print(f"- Acurracy: {accuracy(y_and, y_and_predict):.2f}%")
+print(f"- Error rate: {error_rate(y_and, y_and_predict):.2f}%")
+print(f"- Rodadas necessárias: {model.n_epochs}")
+print("- Predictions:", y_and_predict)
+print("- Weights:", model.weights)
+print("- Bias:", model.bias)
+print("-----------------------------------------")
+
+##### PESOS 10
+
+# treino
+model = Perceptron(input_size=2, lr=0.1, epochs=10000, d_error=1e-3, weights=[10, 10])
+
+# fit AND
+model.fit(X_and, y_and)
+
+y_and_predict = model.predict(X_and)
+print("-----------------------------------------")
+print("- AND GATE - Pesos 10")
+print(f"- Acurracy: {accuracy(y_and, y_and_predict):.2f}%")
+print(f"- Error rate: {error_rate(y_and, y_and_predict):.2f}%")
+print(f"- Rodadas necessárias: {model.n_epochs}")
+print("- Predictions:", y_and_predict)
+print("- Weights:", model.weights)
+print("- Bias:", model.bias)
+print("-----------------------------------------")
+
+##### PESOS 500
+
+# treino
+model = Perceptron(input_size=2, lr=0.1, epochs=10000, d_error=1e-3, weights=[500, 500])
+
+# fit AND
+model.fit(X_and, y_and)
+
+y_and_predict = model.predict(X_and)
+print("-----------------------------------------")
+print("- AND GATE - Pesos 500")
+print(f"- Acurracy: {accuracy(y_and, y_and_predict):.2f}%")
+print(f"- Error rate: {error_rate(y_and, y_and_predict):.2f}%")
+print(f"- Rodadas necessárias: {model.n_epochs}")
+print("- Predictions:", y_and_predict)
+print("- Weights:", model.weights)
+print("- Bias:", model.bias)
+print("-----------------------------------------")
+
+"""# Graficos"""
+
+import numpy as np
+import matplotlib.pyplot as plt
+np.random.seed(42)
+
+class Perceptron: # ERROR DEVE SER PASSADO EM PORCENTAGEM, TIPO 0.1 | 1 | 50 etc.
+    def __init__(self, input_size, lr=0.01, epochs=1000, d_error=0.1, weights = np.random.randn(2)):
+        self.lr = lr # learning rate
+        self.epochs = epochs # quantidade de "rodadas" de treino
+        self.d_error = d_error / 100.0  # erro desejado por rodada para early stopping, divide por 100 para poder passar input como porcentagem
+        self.weights = weights # peso, por padrao vai ser aleatorio mas da pra mudar
+        self.bias = np.random.randn() # bias aleatorio
+        self.n_epochs = 0 # contador de rodadas
+        self.errors = [] # lista para salvar erro quadrático por epoch (mantido)
+        self.error_rates = [] # lista para salvar error rate (%) por epoch (para os gráficos)
+
+    def activation(self, x):
+        return np.where(x >= 0, 1, -1) # se x for maior ou igual a 0, retorna +1. senao retorna -1
+
+    def predict(self, X):
+        linear_output = np.dot(X, self.weights) + self.bias # weighted sum das entradas + bias
+        return self.activation(linear_output)
+
+    def fit(self, X, y):
+        self.errors = []       # reinicia a lista de erros quadráticos por treino
+        self.error_rates = []  # reinicia a lista de error rate (%) por treino
+        for epoch in range(self.epochs): # rodadas
+            epoch_error = 0.0 # acumula erro  (d - o)^2 / 2
+            for xi, target in zip(X, y):
+                linear_output = np.dot(xi, self.weights) + self.bias
+                y_pred = self.activation(linear_output)
+                # ----
+                update = self.lr * (target - y_pred) # erro vezes learning rate
+                self.weights += update * xi # ajuste dos pesos
+                self.bias += update # ajuste do bias
+                epoch_error += ((target - y_pred) ** 2) / 2.0 # erro quadratico/2
+
+            self.errors.append(epoch_error) # salva erro da epoch (quadrático)
+            # --- cálculo da error rate (%) ao fim da epoch, usando o estado atual do modelo
+            y_epoch_pred = self.predict(X)
+            # função de error rate definida abaixo (100 - accuracy)
+            self.error_rates.append(100.0 - (np.sum(y == y_epoch_pred) / len(y)) * 100.0)
+
+            if epoch_error < self.d_error: # early stopping
+                self.n_epochs = epoch + 1 # contador de rodadas
+                break
+        else:
+            self.n_epochs = self.epochs
+
+# calculadora de accuracy, compara a truth table com a predicao
+def accuracy(y_true, y_pred):
+    correct = np.sum(y_true == y_pred)
+    total = len(y_true)
+    return (correct / total) * 100
+
+# calculador de error rate
+def error_rate(y_true, y_pred):
+    return 100 - accuracy(y_true, y_pred)
+
+
+# AND GATE
+X_and = np.array([[0,0], [0,1], [1,0], [1,1]])
+y_and = np.array([-1, -1, -1, 1])
+
+# OR GATE
+X_or = np.array([[0,0], [0,1], [1,0], [1,1]])
+y_or = np.array([-1, 1, 1, 1])
+
+# XOR GATE
+X_xor = np.array([[0,0], [0,1], [1,0], [1,1]])
+y_xor = np.array([-1, 1, 1, -1])
+
+# treino
+model = Perceptron(input_size=2, lr=0.1, epochs=1000, d_error=1e-3)
+
+# fit AND
+model.fit(X_and, y_and)
+y_and_predict = model.predict(X_and)
+print("-----------------------------------------")
+print("- AND GATE")
+print(f"- Acurracy: {accuracy(y_and, y_and_predict):.2f}%")
+print(f"- Error rate: {error_rate(y_and, y_and_predict):.2f}%")
+print(f"- Rodadas necessárias: {model.n_epochs}")
+print("- Predictions:", y_and_predict)
+print("- Weights:", model.weights)
+print("- Bias:", model.bias)
+print("-----------------------------------------")
+errors_and = model.errors
+error_rates_and = model.error_rates
+
+# fit OR
+model.fit(X_or, y_or)
 y_or_predict = model.predict(X_or)
 print("-----------------------------------------")
-print("- OR GATE (Delta)")
-print(f"- Accuracy: {accuracy(y_or, y_or_predict):.2f}%")
+print("- OR GATE")
+print(f"- Acurracy: {accuracy(y_or, y_or_predict):.2f}%")
+print(f"- Error rate: {error_rate(y_or, y_or_predict):.2f}%")
+print(f"- Rodadas necessárias: {model.n_epochs}")
 print("- Predictions:", y_or_predict)
 print("- Weights:", model.weights)
 print("- Bias:", model.bias)
 print("-----------------------------------------")
+errors_or = model.errors
+error_rates_or = model.error_rates
 
-# XOR com Delta
-model.fit_delta(X_xor, y_xor)
-
+# fit XOR
+model.fit(X_xor, y_xor)
 y_xor_predict = model.predict(X_xor)
 print("-----------------------------------------")
-print("- XOR GATE (Delta)")
-print(f"- Accuracy: {accuracy(y_xor, y_xor_predict):.2f}%")
+print("- XOR GATE")
+print(f"- Acurracy: {accuracy(y_xor, y_xor_predict):.2f}%")
+print(f"- Error rate: {error_rate(y_xor, y_xor_predict):.2f}%")
+print(f"- Rodadas necessárias: {model.n_epochs}")
 print("- Predictions:", y_xor_predict)
 print("- Weights:", model.weights)
 print("- Bias:", model.bias)
 print("-----------------------------------------")
+errors_xor = model.errors
+error_rates_xor = model.error_rates
+
+
+fig, axes = plt.subplots(1, 3, figsize=(14, 4))
+
+axes[0].plot(error_rates_and)
+axes[0].set_title("AND - Error rate por época")
+axes[0].set_xlabel("Épocas")
+axes[0].set_ylabel("Error rate (%)")
+axes[0].grid(True)
+
+axes[1].plot(error_rates_or)
+axes[1].set_title("OR - Error rate por época")
+axes[1].set_xlabel("Épocas")
+axes[1].set_ylabel("Error rate (%)")
+axes[1].grid(True)
+
+axes[2].plot(error_rates_xor)
+axes[2].set_title("XOR - Error rate por época")
+axes[2].set_xlabel("Épocas")
+axes[2].set_ylabel("Error rate (%)")
+axes[2].grid(True)
+
+fig.suptitle("Perceptron - Error rate (%) por época")
+fig.tight_layout()
+plt.show()
+
+"""# Teste com Dataset mais Complexo | Sonar (Rocks vs Mines)
+
+### Fonte do Dataset:
+https://archive.ics.uci.edu/dataset/151/connectionist+bench+sonar+mines+vs+rocks
+
+### Descricao do Dataset:
+The task is to train a network to discriminate between sonar signals bounced off a metal cylinder and those bounced off a roughly cylindrical rock.
+"""
+
+!pip install ucimlrepo
+
+import numpy as np
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from ucimlrepo import fetch_ucirepo
+np.random.seed(42)
+
+
+class Perceptron: # ERROR DEVE SER PASSADO EM PORCENTAGEM, TIPO 0.1 | 1 | 50 etc.
+    def __init__(self, input_size, lr=0.01, epochs=1000, d_error=0.1, weights = np.random.randn(2)):
+        self.lr = lr # learning rate
+        self.epochs = epochs # quantidade de "rodadas" de treino
+        self.d_error = d_error / 100.0  # erro desejado por rodada para early stopping, divide por 100 para poder passar input como porcentagem
+        self.weights = weights # peso, por padrao vai ser aleatorio mas da pra mudar
+        self.bias = np.random.randn() # bias aleatorio
+        self.n_epochs = 0 # contador de rodadas
+        self.errors = []  # guardar taxa de erro
+
+    def activation(self, x):
+        return np.where(x >= 0, 1, -1) # se x for maior ou igual a 0, retorna +1. senao retorna -1
+
+    def predict(self, X):
+        linear_output = np.dot(X, self.weights) + self.bias # weighted sum das entradas + bias
+        return self.activation(linear_output)
+
+    def fit(self, X, y):
+        for epoch in range(self.epochs): # rodadas
+            epoch_error = 0.0 # acumula erro  (d - o)^2 / 2
+            for xi, target in zip(X, y):
+                linear_output = np.dot(xi, self.weights) + self.bias
+                y_pred = self.activation(linear_output)
+                # ----
+                update = self.lr * (target - y_pred) # erro vezes learning rate
+                self.weights += update * xi # ajuste dos pesos
+                self.bias += update # ajuste do bias
+                epoch_error += ((target - y_pred) ** 2) / 2.0 # erro quadratico/2
+
+            # guarda taxa de erro em porcentagem
+            y_pred_epoch = self.predict(X)
+            error_rate_epoch = 100 - (np.sum(y_pred_epoch == y) / len(y)) * 100
+            self.errors.append(error_rate_epoch)
+
+            if epoch_error < self.d_error: # early stopping
+                self.n_epochs = epoch + 1 # contador de rodadas
+                break
+        else:
+            self.n_epochs = self.epochs
+
+# calculadora de accuracy, compara a truth table com a predicao
+def accuracy(y_true, y_pred):
+    correct = np.sum(y_true == y_pred)
+    total = len(y_true)
+    return (correct / total) * 100
+
+# calculador de error rate
+def error_rate(y_true, y_pred):
+    return 100 - accuracy(y_true, y_pred)
+
+
+# --------------------------------------------------------------------------------- #
+
+# baixar  dataset SONAR da UCI
+
+connectionist_bench_sonar_mines_vs_rocks = fetch_ucirepo(id=151)
+
+X = connectionist_bench_sonar_mines_vs_rocks.data.features.to_numpy(dtype=float)
+
+y_raw = connectionist_bench_sonar_mines_vs_rocks.data.targets.values.ravel()
+y = np.where(y_raw == 'M', 1, -1)  # M = +1, R = -1
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.30, random_state=42, stratify=y
+)
+
+mu = X_train.mean(axis=0)
+sigma = X_train.std(axis=0) + 1e-9
+X_train_std = (X_train - mu) / sigma
+X_test_std  = (X_test  - mu) / sigma
+
+
+model = Perceptron(
+    input_size=60,
+    lr=0.01,
+    epochs=10000,
+    d_error=0.1,
+    weights=np.random.randn(60)
+)
+
+
+model.fit(X_train_std, y_train)
+
+
+y_pred_train = model.predict(X_train_std)
+y_pred_test  = model.predict(X_test_std)
+
+print("-----------------------------------------")
+print("- SONAR (Rocks vs Mines)")
+print(f"- Acurracy: {accuracy(y_and, y_and_predict):.2f}%")
+print(f"- Error rate: {error_rate(y_and, y_and_predict):.2f}%")
+print(f"- Rodadas necessárias: {model.n_epochs}")
+print("- Weights:", model.weights)
+print("- Bias:", model.bias)
+print("-----------------------------------------")
+
+print("--- Teste ---")
+print(f"- Acurracy: {accuracy(y_test, y_pred_test):.2f}%")
+print(f"- Error rate: {error_rate(y_test, y_pred_test):.2f}%")
+
+
+# gfrafico
+plt.figure(figsize=(8,5))
+plt.plot(range(1, len(model.errors)+1), model.errors, marker="o")
+plt.xlabel("Época")
+plt.ylabel("Taxa de Erro (%)")
+plt.title("Evolução da Taxa de Erro por Época (Treino)")
+plt.grid(True)
+plt.show()
